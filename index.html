@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Nitro's Musical Random Colour Picker</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { 
+  width: 100%; height: 100%; overflow: hidden; 
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #000; 
+}
+
+/* --- HOME SCREEN --- */
+#home-screen {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: #0b0b0b;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  transition: opacity 1.5s ease, visibility 1.5s;
+  color: white;
+  text-align: center;
+}
+#home-screen h1 {
+  font-size: 3rem;
+  font-weight: 900;
+  letter-spacing: -2px;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+#enter-btn {
+  padding: 15px 40px;
+  background: transparent;
+  color: white;
+  border: 2px solid white;
+  border-radius: 999px;
+  font-family: monospace;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+#enter-btn:hover {
+  background: white;
+  color: black;
+  transform: scale(1.05);
+}
+.fade-out { opacity: 0; visibility: hidden; }
+
+/* --- MAIN INTERFACE --- */
+#sc { width: 100%; height: 100vh; overflow-y: scroll; position: relative; z-index: 10; }
+#inner { height: 10000px; }
+#sticky {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: transparent;
+  transition: background 0.4s ease; 
+}
+.no-flash { transition: background 2s ease !important; }
+
+#color-name { font-size: 3.5rem; font-weight: 900; text-transform: uppercase; text-align: center; line-height: 1; z-index: 50; }
+.vals { display: flex; gap: 8px; z-index: 50; }
+.pill { font-size: 12px; font-family: monospace; padding: 6px 14px; border-radius: 999px; border: 1px solid; }
+
+#progress-bar { width: 220px; height: 4px; background: rgba(128,128,128,0.2); overflow: hidden; z-index: 50; }
+#progress-fill { height: 100%; width: 0%; transition: background 0.4s ease, width 0.1s linear; }
+#step-label { font-size: 11px; font-family: monospace; opacity: 0.6; z-index: 50; }
+
+#synth-board {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  margin-top: 10px;
+  background: rgba(128,128,128,0.1);
+  padding: 15px;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  z-index: 50;
+}
+.ctrl { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.ctrl label { font-size: 9px; font-family: monospace; text-transform: uppercase; opacity: 0.8; }
+input[type=range] { cursor: pointer; width: 80px; accent-color: currentColor; }
+
+/* The Wave Zone - Boutique Style */
+#wave-zone {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 280px;
+  height: 60px;
+  z-index: 40;
+  border: 1px solid rgba(128,128,128,0.3);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(0,0,0,0.1);
+}
+#canvas { width: 100%; height: 100%; }
+
+#top-menu {
+  position: fixed;
+  top: 20px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  z-index: 100;
+}
+.menu-btn {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(128,128,128,0.3);
+  font-family: monospace;
+  font-size: 10px;
+  cursor: pointer;
+  background: rgba(128,128,128,0.1);
+  text-transform: uppercase;
+  transition: color 0.4s ease;
+}
+</style>
+</head>
+<body>
+
+<div id="home-screen">
+    <h1>Nitro's Musical<br>Random Colour Picker</h1>
+    <button id="enter-btn">ENTER</button>
+</div>
+
+<div id="top-menu">
+  <button id="random-btn" class="menu-btn">Random</button>
+  <button id="mute-btn" class="menu-btn">Mute: OFF</button>
+  <button id="flash-btn" class="menu-btn">Disable Flashes</button>
+</div>
+
+<div id="sc">
+  <div id="inner">
+    <div id="sticky">
+      <div id="wave-zone"><canvas id="canvas"></canvas></div>
+      <h1 id="color-name">Scroll to Start</h1>
+      <div class="vals">
+        <span class="pill" id="hx"></span>
+        <span class="pill" id="rg"></span>
+      </div>
+      <div id="progress-bar"><div id="progress-fill"></div></div>
+      <div id="step-label"></div>
+
+      <div id="synth-board">
+        <div class="ctrl">
+          <label>Volume</label>
+          <input type="range" id="vol-slider" min="0" max="0.3" step="0.01" value="0.05">
+        </div>
+        <div class="ctrl">
+          <label>Cutoff</label>
+          <input type="range" id="cutoff-slider" min="100" max="5000" step="10" value="1500">
+        </div>
+        <div class="ctrl">
+          <label>Bass</label>
+          <input type="range" id="bass-slider" min="-20" max="20" step="1" value="0">
+        </div>
+        <div class="ctrl">
+          <label>Treble</label>
+          <input type="range" id="treble-slider" min="-20" max="20" step="1" value="0">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>
